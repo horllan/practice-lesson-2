@@ -39,7 +39,12 @@ self.addEventListener('install', (evt) => {
 
 // service worker activate event listener
 self.addEventListener('activate', (evt) => {
-    // serving the latest content after activation
+    // delteting the old cache
+    evt.waitUntil(
+        caches.keys().then(keys=>{
+            return Promise.all(keys.filter(key => key !== staticSiteName && key !== dynamicSiteName).map(key => caches.delete(key)))
+        })
+    )
 
 })
 
@@ -51,6 +56,7 @@ self.addEventListener('fetch', (evt) => {
             return cacheRes || fetch(evt.request).then(async fetchRes => {
                 const cache = await caches.open(dynamicSiteName)
                 cache.put(evt.request.url, fetchRes.clone())
+                limitCache(dynamicSiteName, 2)
                 return fetchRes
             })
         }).catch(() => {
